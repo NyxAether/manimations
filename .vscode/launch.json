@@ -5,6 +5,16 @@
     "version": "0.1.0",
     "configurations": [
         
+
+        {
+            "name": "Python: Test Manim",
+            "type": "python",
+            "cwd": "${workspaceFolder}",
+            "request": "launch",
+            "program": "${workspaceFolder}\\.venv\\Scripts\\manim.exe",
+            "args": ["-ql", "${file}"],
+            "console": "integratedTerminal"
+        },
         {
             "name": "Python: Current File",
             "type": "python",
