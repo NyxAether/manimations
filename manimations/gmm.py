@@ -96,16 +96,27 @@ class Dot2Color(M.VGroup):
 class Gaussian(M.VGroup):
     def __init__(self, gaussian: npt.NDArray, color: M.ManimColor = M.RED) -> None:
         super().__init__(color=color)
-        GAUSSIAN_SCALE = 1.2
-        nb_ellipses = 5
+        nb_ellipses = 6
         self._elipses = []
         rotation, eign_v = get_rotation(gaussian)
+        #---Weird code here---#
+        # Sometimes rotation may change by +-pi/2 between two iterations
+        # and eigen values are 'inverted'
+        # This is due to the computation of eigen vectors.
+        # It's mathematically equivalent but it affect visualization
+        # creating a 'wobbling' effect since it invert width and height
+        # of the ellipses
+        # Code below fixes this
+        if eign_v[0] < eign_v[1]:
+            eign_v = eign_v[::-1]
+            rotation = rotation +np.pi/2
+        #---Weird code end---#
         for i in range(nb_ellipses):
             opacity = (nb_ellipses - i) / nb_ellipses
             self._elipses.append(
                 M.Ellipse(
-                    width=np.sqrt(eign_v[0]) * i * GAUSSIAN_SCALE,
-                    height=np.sqrt(eign_v[1]) * i * GAUSSIAN_SCALE,
+                    width=np.sqrt(eign_v[0]) * i ,
+                    height=np.sqrt(eign_v[1]) * i ,
                     color=self.color,
                     fill_opacity=opacity,
                 )
@@ -115,10 +126,10 @@ class Gaussian(M.VGroup):
         self.rotate(rotation)
 
 
-class KMeans(M.MovingCameraScene):
+class GMM(M.MovingCameraScene):
     def construct(self) -> None:
         GROUP_SIZE = 200
-        rng = np.random.default_rng(4339)
+        rng = np.random.default_rng(4329)
         group1 = rng.multivariate_normal(
             (-1, 1), ((6, 4), (4, 6)), size=GROUP_SIZE
         )  # mean, cov
