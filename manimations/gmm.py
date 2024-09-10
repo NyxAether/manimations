@@ -129,6 +129,7 @@ class Gaussian(M.VGroup):
 class GMM(M.MovingCameraScene):
     def construct(self) -> None:
         GROUP_SIZE = 200
+        NB_GAUSSIANS=3
         rng = np.random.default_rng(4329)
         group1 = rng.multivariate_normal(
             (-1, 1), ((6, 4), (4, 6)), size=GROUP_SIZE
@@ -141,10 +142,7 @@ class GMM(M.MovingCameraScene):
             np.concatenate((gr, np.zeros((gr.shape[0], 1))), axis=1) for gr in groups
         ]
         data_as_points = np.concatenate((data, np.zeros((data.shape[0], 1))), axis=1)
-        g1 = random_multivariate_normal(rng, (-5, 5), (0, 10), (0, 10))
-        g2 = random_multivariate_normal(rng, (-5, 5), (0, 10), (0, 10))
-        g3 = random_multivariate_normal(rng, (-5, 5), (0, 10), (0, 10))
-        gaussians = [g1, g2, g3]
+        gaussians = [random_multivariate_normal(rng, (-5, 5), (0, 10), (0, 10)) for _ in range(NB_GAUSSIANS)]
         colors = [M.GREEN, M.BLUE, M.RED]
         pis = np.ones(len(gaussians)) / len(gaussians)
 
