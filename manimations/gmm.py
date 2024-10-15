@@ -1,6 +1,8 @@
-import manim as M
 import numpy as np
 import numpy.typing as npt
+from manim import (BLUE, GREEN, PI, RED, AnnularSector, Dot, Ellipse, FadeIn,
+                   FadeOut, GrowFromCenter, ManimColor, NumberPlane,
+                   ReplacementTransform, VGroup, MovingCameraScene,Group,Scene,Line, Create)
 from scipy.spatial.transform import Rotation
 from scipy.stats import multivariate_normal
 
@@ -64,12 +66,12 @@ def step(
     return gaussians, pis
 
 
-class Dot2Color(M.VGroup):
+class Dot2Color(VGroup):
     def __init__(
         self,
         coord: npt.NDArray,
-        color1: M.ManimColor = M.RED,
-        color2: M.ManimColor = M.BLUE,
+        color1: ManimColor = RED,
+        color2: ManimColor = BLUE,
         ratio: float = 0.5,
     ) -> None:
         super().__init__()
@@ -78,11 +80,11 @@ class Dot2Color(M.VGroup):
         self.color1 = color1
         self.color2 = color2
         self.ratio = ratio
-        self.sector1 = M.AnnularSector(
-            0, 2 * DOT_SIZE, M.PI * 2 * self.ratio, color=self.color1
+        self.sector1 = AnnularSector(
+            0, 2 * DOT_SIZE, PI * 2 * self.ratio, color=self.color1
         )
-        self.sector2 = M.AnnularSector(
-            0, 2 * DOT_SIZE, -M.PI * 2 * (1 - self.ratio), color=self.color2
+        self.sector2 = AnnularSector(
+            0, 2 * DOT_SIZE, -PI * 2 * (1 - self.ratio), color=self.color2
         )
         self.sector1.add_updater(
             lambda m: m.move_to(self.coord + np.array((0, DOT_SIZE, 0)))
@@ -93,13 +95,13 @@ class Dot2Color(M.VGroup):
         self.add(self.sector1, self.sector2)
 
 
-class Gaussian(M.VGroup):
-    def __init__(self, gaussian: npt.NDArray, color: M.ManimColor = M.RED) -> None:
+class Gaussian(VGroup):
+    def __init__(self, gaussian: npt.NDArray, color: ManimColor = RED) -> None:
         super().__init__(color=color)
         nb_ellipses = 6
         self._elipses = []
         rotation, eign_v = get_rotation(gaussian)
-        #---Weird code here---#
+        # ---Weird code here---#
         # Sometimes rotation may change by +-pi/2 between two iterations
         # and eigen values are 'inverted'
         # This is due to the computation of eigen vectors.
@@ -109,14 +111,14 @@ class Gaussian(M.VGroup):
         # Code below fixes this
         if eign_v[0] < eign_v[1]:
             eign_v = eign_v[::-1]
-            rotation = rotation +np.pi/2
-        #---Weird code end---#
+            rotation = rotation + np.pi / 2
+        # ---Weird code end---#
         for i in range(nb_ellipses):
             opacity = (nb_ellipses - i) / nb_ellipses
             self._elipses.append(
-                M.Ellipse(
-                    width=np.sqrt(eign_v[0]) * i ,
-                    height=np.sqrt(eign_v[1]) * i ,
+                Ellipse(
+                    width=np.sqrt(eign_v[0]) * i,
+                    height=np.sqrt(eign_v[1]) * i,
                     color=self.color,
                     fill_opacity=opacity,
                 )
@@ -126,10 +128,10 @@ class Gaussian(M.VGroup):
         self.rotate(rotation)
 
 
-class GMM(M.MovingCameraScene):
+class GMM(MovingCameraScene):
     def construct(self) -> None:
         GROUP_SIZE = 200
-        NB_GAUSSIANS=3
+        NB_GAUSSIANS = 3
         rng = np.random.default_rng(4329)
         group1 = rng.multivariate_normal(
             (-1, 1), ((6, 4), (4, 6)), size=GROUP_SIZE
@@ -142,34 +144,40 @@ class GMM(M.MovingCameraScene):
             np.concatenate((gr, np.zeros((gr.shape[0], 1))), axis=1) for gr in groups
         ]
         data_as_points = np.concatenate((data, np.zeros((data.shape[0], 1))), axis=1)
-        gaussians = [random_multivariate_normal(rng, (-5, 5), (0, 10), (0, 10)) for _ in range(NB_GAUSSIANS)]
-        colors = [M.GREEN, M.BLUE, M.RED]
+        gaussians = [
+            random_multivariate_normal(rng, (-5, 5), (0, 10), (0, 10))
+            for _ in range(NB_GAUSSIANS)
+        ]
+        colors = [GREEN, BLUE, RED]
         pis = np.ones(len(gaussians)) / len(gaussians)
 
         # Plan
-        self.camera.frame.scale(2.2)
-        numberplane = M.NumberPlane(x_range=(-16, 16, 1), y_range=(-9, 9, 1))
+        self.camera.scale(2.2)
+        numberplane = NumberPlane(x_range=(-16, 16, 1), y_range=(-9, 9, 1))
         self.add(numberplane)
 
         # Dots
         groups_g = []
         for group, color in zip(groups_as_points, colors[::-1]):
-            current_gr = M.VGroup(*[M.Dot(dot, color=color) for dot in group])
+            current_gr = VGroup(*[Dot(dot, color=color) for dot in group])
             groups_g.append(current_gr)
-            self.play(M.GrowFromCenter(current_gr))
+            self.play(GrowFromCenter(current_gr))
         self.wait(1)
 
-        dots = [M.Dot(dot) for dot in data_as_points]
-        g_dots = M.VGroup(*dots)
-        g_dots.set_z_index(2)
-        self.play(*[M.FadeOut(gr) for gr in groups_g], M.FadeIn(g_dots))
+        dots = [Dot(dot) for dot in data_as_points]
+        g_dots = VGroup(*dots)
+        self.play(*[FadeOut(gr) for gr in groups_g], FadeIn(g_dots))
         self.wait(1)
 
         # Gaussians
         g_gaussians = [Gaussian(g, color=color) for g, color in zip(gaussians, colors)]
-        self.play(*[M.GrowFromCenter(g) for g in g_gaussians])
+        g_dots_prev = g_dots
+        dots = [Dot(dot) for dot in data_as_points]
+        g_dots = VGroup(*dots)
+        self.play(*[GrowFromCenter(g) for g in g_gaussians] ,FadeOut(g_dots_prev), FadeIn(g_dots))
         self.wait(1)
 
+        # self.interactive_embed()
         # Gaussians iteration
         for i in range(10):
             r = ratios(data, gaussians, pis)
@@ -184,7 +192,7 @@ class GMM(M.MovingCameraScene):
             ]
             self.play(
                 *[
-                    M.ReplacementTransform(pg, g)
+                    ReplacementTransform(pg, g)
                     for pg, g in zip(prev_gaussians, g_gaussians)
                 ]
             )
